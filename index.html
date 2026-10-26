@@ -66,14 +66,14 @@ button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 .stick{position:absolute;width:128px;height:128px;border-radius:50%;bottom:calc(var(--ib) + 16px);
   background:radial-gradient(circle,rgba(246,249,252,.18) 0 55%,rgba(246,249,252,.32) 56% 100%);border:3px solid rgba(246,249,252,.75);box-shadow:0 0 0 2px rgba(19,35,58,.25)}
 #stickL{left:calc(var(--il) + 20px)} #stickR{right:calc(var(--ir) + 20px)}
-.stick .tag{position:absolute;left:50%;top:-22px;transform:translateX(-50%);font-size:12px;font-weight:700;letter-spacing:.1em;color:#fff;text-shadow:0 1px 2px rgba(19,35,58,.9);white-space:nowrap}
+.stick .tag{position:absolute;left:50%;bottom:-17px;transform:translateX(-50%);font-size:12px;font-weight:700;letter-spacing:.1em;color:#fff;text-shadow:0 1px 2px rgba(19,35,58,.9);white-space:nowrap}
 .knob{position:absolute;left:50%;top:50%;width:62px;height:62px;margin:-31px 0 0 -31px;border-radius:50%;background:var(--snow);box-shadow:0 3px 0 rgba(19,35,58,.45),inset 0 0 0 3px var(--ink);display:grid;place-items:center}
 .knob svg{width:44px;height:44px}
 #knobR svg{transform:scaleX(-1)}
 .stick.on{border-color:var(--lift)}
-.act{position:absolute;bottom:calc(var(--ib) + 128px);width:66px;height:66px;border-radius:50%;font-family:var(--display);font-size:13px}
-#btnGrab{left:calc(var(--il) + 150px);background:var(--lift);color:var(--ink);box-shadow:0 4px 0 var(--lift-d)}
-#btnPush{right:calc(var(--ir) + 150px);background:var(--patrol);color:#fff;box-shadow:0 4px 0 var(--patrol-d)}
+.act{position:absolute;bottom:calc(var(--ib) + 158px);width:66px;height:66px;border-radius:50%;font-family:var(--display);font-size:13px}
+#btnGrab{right:calc(var(--ir) + 28px);background:var(--lift);color:var(--ink);box-shadow:0 4px 0 var(--lift-d)}
+#btnPush{right:calc(var(--ir) + 106px);background:var(--patrol);color:#fff;box-shadow:0 4px 0 var(--patrol-d)}
 #btnPush small{display:block;font-family:var(--body);font-size:11px;font-weight:700;letter-spacing:.06em;margin-top:1px}
 .act.on{transform:translateY(4px);box-shadow:0 0 0 transparent!important}
 #btnGrab.lit{background:#fff;box-shadow:0 0 0 4px var(--lift),0 4px 0 var(--lift-d)}
@@ -216,7 +216,7 @@ button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
         <li><b>Vänster spak:</b> styr åt sidorna, snurrar i luften. Ner = broms, upp = fartställning.</li>
         <li><b>Höger spak:</b> dra ner för att ladda, flicka upp för att hoppa. I luften: upp = frontflip, ner = backflip.</li>
         <li><b>GRAB:</b> tryck i luften. Spakarnas läge väljer grabben: vänster ← Japan, → Mute · höger ↑ Nose, ↓ Tail, → Truck driver, ← Critical. Spakarna voltar och snurrar medan du håller grabben.</li>
-        <li><b>PUSH:</b> stakar med stavarna för mer fart.</li>
+        <li><b>PUSH</b> och <b>GRAB</b> sitter ovanför höger spak. PUSH stakar med stavarna för mer fart.</li>
         <li>Landa med skidorna rakt fram. Rails: styr åt sidan för railslide.</li>
         <li>Åk till en dalstation och tryck <b>Åk lift</b>. Se upp för pistmaskinerna.</li>
       </ul>
@@ -270,6 +270,7 @@ button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
     <div class="tk-r">
       <h2>Min åkare</h2>
       <label class="nm" for="nameIn">NAMN<input id="nameIn" maxlength="16" autocomplete="off"></label>
+      <div class="wxs" id="lookCats" role="tablist" aria-label="Plagg"></div>
       <div id="lookOpts"></div>
       <button class="go" id="lookDone">Klar</button>
     </div>
@@ -1054,7 +1055,7 @@ const S = {
   p: new V3(), v: new V3(), heading: 0, grounded: true, offT: 0, airTime: 0, spin: 0, flip: 0, grabT: 0, grabName: null, grabOn: false, grabPrime: 0, airJumped: false,
   grind: null, grindS: 0, grindDir: 1, grindSpeed: 0, grindDist: 0, slide: 0, slideT: 0, slid: false, railCd: 0, lastRail: null,
   charging: false, charge: 0, centerT: 0, jumpQ: false, jumpPow: 0, rsArmed: true, prevRy: 0, crashT: 0, upS: new V3(0, 1, 0), lift: null, liftS: 0, ff: false,
-  latSpeed: 0, braking: 0, pushCd: 0, pushAnim: 1, pushImp: 0, score: 0, best: +store.get('fjallpark.best', 0) || 0, combo: { names: [], pts: 0, idle: 0 },
+  latSpeed: 0, braking: 0, pushCd: 0, pushAnim: 1, pushImp: 0, pushK: 0, score: 0, best: +store.get('fjallpark.best', 0) || 0, combo: { names: [], pts: 0, idle: 0 },
 };
 let mode = 'menu', paused = false, time = 0;
 const input = { lx: 0, ly: 0, rx: 0, ry: 0, pushHeld: false };
@@ -1090,7 +1091,10 @@ function trickParts() {
 function evalAir() {
   const fr = S.flip - 2 * Math.PI * Math.round(S.flip / (2 * Math.PI)), sr = S.spin - Math.PI * Math.round(S.spin / Math.PI);
   if (S.airTime < 0.4) return { ok: true, name: null };
-  const ok = Math.abs(fr) < 1.05 && Math.abs(sr) < 1.0, sketchy = Math.abs(fr) > 0.55 || Math.abs(sr) > 0.6;
+  const hsp = Math.hypot(S.v.x, S.v.z);
+  // Slow = forgiving: at walking pace you can land at any angle, at speed skis must point down the line.
+  const spinTol = hsp < 3.5 ? 1.58 : lerp(1.58, 1.0, smooth(3.5, 9, hsp)), flipTol = lerp(1.35, 1.05, smooth(3, 9, hsp));
+  const ok = Math.abs(fr) < flipTol && Math.abs(sr) < spinTol, sketchy = (Math.abs(fr) > 0.55 || Math.abs(sr) > 0.6) && hsp > 3.5;
   const { parts, n180, nf } = trickParts();
   if (!parts.length) { if (S.airTime > 1.1) parts.push('Big air'); else return { ok, sketchy, name: null }; }
   const pts = Math.round(S.airTime * 45 + n180 * 110 * (1 + 0.15 * n180) + nf * nf * 450 + (S.grabT > 0.15 ? 120 + S.grabT * 160 : 0) + (S.grabT > 0.15 && (n180 || nf) ? 100 : 0));
@@ -1152,7 +1156,7 @@ function stepSki(dt) {
     lat.multiplyScalar(k); along += (along >= 0 ? 1 : -1) * lm * (1 - k) * (brake ? 0 : 0.5);
     S.v.copy(fp).multiplyScalar(along).add(lat);
     S.latSpeed = lm; S.braking = brake;
-    if (input.pushHeld && S.pushCd <= 0 && !S.charging) { S.pushCd = 0.62; S.pushAnim = 0; S.pushImp = 0.2; }
+    if (input.pushHeld && S.pushCd <= 0 && !S.charging) { S.pushCd = 0.62; S.pushAnim = 0; S.pushImp = 0.2; S.pushK = (S.pushK + 1) % 1000; }
     if (S.pushImp > 0) { S.pushImp -= dt; if (S.pushImp <= 0) { S.v.addScaledVector(fp, Math.max(0.4, 3.6 * (1 - Math.max(0, along) / 17))); emit(S.p.x + fp.z * 0.6, S.p.y, S.p.z - fp.x * 0.6, 3, 1.5); emit(S.p.x - fp.z * 0.6, S.p.y, S.p.z + fp.x * 0.6, 3, 1.5); } }
     if (W.storm > 0.5) S.v.addScaledVector(W.wind, 0.012 * dt);
     const sp = S.v.length();
@@ -1183,7 +1187,13 @@ function land() {
   const r = evalAir();
   S.grabOn = false;
   if (!r.ok || vn < -21) { crash(vn < -21 ? 'För hård landning' : 'Vurpa!'); return; }
-  const hs = Math.hypot(S.v.x, S.v.z); if (hs > 1) S.heading = Math.atan2(S.v.x, S.v.z);
+  const hs = Math.hypot(S.v.x, S.v.z), bodyYaw = S.heading + S.spin;
+  if (hs > 1) {
+    const vy = Math.atan2(S.v.x, S.v.z); let dd = wrapPi(vy - bodyYaw);
+    if (Math.abs(dd) > Math.PI / 2) dd = wrapPi(dd - Math.PI);
+    if (Math.abs(dd) < 0.35) S.heading = vy;
+    else { S.heading = wrapPi(vy - dd); S.v.multiplyScalar(Math.max(0.15, Math.cos(dd))); emit(S.p.x, S.p.y, S.p.z, 10, 3); }
+  } else S.heading = bodyYaw;
   if (S.airTime > 0.5) emit(S.p.x, S.p.y, S.p.z, 14, 4, S.v.x * 0.3, S.v.z * 0.3);
   if (r.name) { S.v.multiplyScalar(r.sketchy ? 0.8 : 0.98); addTrick(r.name, Math.round(r.pts * (r.sketchy ? 0.6 : 1))); toast(r.sketchy ? 'Skakigt!' : pick(['Snyggt!', 'Rent!', 'Stompad!', 'Fett!', 'Klockrent!'])); }
   S.spin = 0; S.flip = 0; S.grabName = null; S.grabT = 0; S.airTime = 0;
@@ -1520,104 +1530,355 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && mod
 
 /* ================= LOOK (appearance) ================= */
 const mpEl = $('mp'), lookEl = $('look');
-const SWATCH = ['#ff5a1f', '#d8352a', '#ff7eb6', '#ffc21a', '#2c9c6a', '#2f6fd6', '#6b4fd0', '#13233a', '#1b1b1b', '#f4f6f8'];
-const LOOK_PARTS = [['jacket', 'JACKA'], ['pants', 'BYXOR'], ['hat', 'HUVUD'], ['goggles', 'GLASÖGON'], ['skis', 'SKIDOR'], ['gloves', 'HANDSKAR']];
-const HAT_TYPES = [['helmet', 'Hjälm'], ['beanie', 'Mössa'], ['cap', 'Keps']];
-const defLook = { name: 'Åkare ' + (10 + Math.floor(Math.random() * 90)), jacket: '#ff5a1f', pants: '#13233a', hat: '#f4f6f8', goggles: '#ffc21a', skis: '#13233a', gloves: '#1b1b1b', hatType: 'helmet' };
+const SWATCH = ['#ff5a1f', '#d8352a', '#a3163b', '#ff7eb6', '#ffc21a', '#c9a227', '#2c9c6a', '#1f5f47', '#7fc8e8', '#2f6fd6', '#1d2f6b', '#6b4fd0', '#8a5a3b', '#9aa4b1', '#13233a', '#1b1b1b', '#f4f6f8', '#e9e2d0'];
+const LENS = ['#ff8a1f', '#d8352a', '#ffc21a', '#2c9c6a', '#2f6fd6', '#7b4fd6', '#c9d3de', '#1b1b1b'];
+const JACKETS = [['shell', 'Skaljacka'], ['puffer', 'Dunjacka'], ['anorak', 'Anorak']];
+const PANTS = [['shell', 'Skalbyxor'], ['bib', 'Hängselbyxor'], ['baggy', 'Baggy']];
+const HATS = [['helmet', 'Hjälm'], ['beanie', 'Mössa'], ['cap', 'Keps']];
+const GOGGLES = [['frame', 'Goggles'], ['sphere', 'Sfäriska'], ['sun', 'Solglasögon']];
+const GLOVES = [['glove', 'Handskar'], ['mitten', 'Tumvantar']];
+const CATS = [['jacket', 'Jacka'], ['pants', 'Byxor'], ['hat', 'Huvud'], ['goggles', 'Glasögon'], ['gloves', 'Handskar'], ['skis', 'Skidor']];
+const MODELS = { jacket: JACKETS, pants: PANTS, hat: HATS, goggles: GOGGLES, gloves: GLOVES };
+const defLook = {
+  name: 'Åkare ' + (10 + Math.floor(Math.random() * 90)),
+  jacket: { m: 'shell', c: '#ff5a1f', a: '#13233a' }, pants: { m: 'shell', c: '#13233a' }, hat: { m: 'helmet', c: '#f4f6f8' },
+  goggles: { m: 'frame', c: '#ff8a1f' }, gloves: { m: 'glove', c: '#1b1b1b' }, skis: { c: '#13233a' },
+};
 const cleanText = (s, n) => String(s || '').replace(/[\u0000-\u001f\u007f-\u009f­​-‏‪-‮⁠-⁯﻿]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
 const isHex = c => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c);
+const pickM = (list, v, d) => list.some(x => x[0] === v) ? v : d;
 function sanitizeLook(l) {
-  const o = Object.assign({}, defLook);
-  if (l && typeof l === 'object') { for (const [k] of LOOK_PARTS) if (isHex(l[k])) o[k] = l[k]; if (HAT_TYPES.some(h => h[0] === l.hatType)) o.hatType = l.hatType; o.name = cleanText(l.name, 16) || 'Åkare'; }
+  const o = JSON.parse(JSON.stringify(defLook));
+  if (!l || typeof l !== 'object') return o;
+  o.name = cleanText(l.name, 16) || 'Åkare';
+  const part = (k, models) => {
+    const v = l[k];
+    if (typeof v === 'string') { if (isHex(v)) o[k].c = v; return; }          // old flat format
+    if (!v || typeof v !== 'object') return;
+    if (isHex(v.c)) o[k].c = v.c;
+    if (k === 'jacket' && isHex(v.a)) o[k].a = v.a;
+    if (models) o[k].m = pickM(models, v.m, o[k].m);
+  };
+  part('jacket', JACKETS); part('pants', PANTS); part('hat', HATS); part('goggles', GOGGLES); part('gloves', GLOVES); part('skis', null);
+  if (typeof l.hatType === 'string') o.hat.m = pickM(HATS, l.hatType, o.hat.m);
   return o;
 }
-let LOOK; try { LOOK = sanitizeLook(Object.assign({}, defLook, JSON.parse(store.get('fjallpark.look', '{}')))); } catch (e) { LOOK = sanitizeLook(defLook); }
-function buildAvatar() {
-  const Lm = c => new THREE.MeshLambertMaterial({ color: c });
-  const mats = { jacket: Lm(0xff5a1f), pants: Lm(0x13233a), hat: Lm(0xf4f6f8), goggles: new THREE.MeshPhongMaterial({ color: 0xffc21a, shininess: 90, specular: 0x888888 }), skis: Lm(0x13233a), gloves: Lm(0x1b1b1b) };
-  const skin = Lm(0xe9b08a), dark = Lm(0x222831), pole = Lm(0xb8c2cc), tip = Lm(0xff5a1f), white = Lm(0xf4f6f8);
-  const root = new THREE.Group(), pose = new THREE.Group(); root.add(pose);
-  const add = (p, geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; p.add(o); return o; };
-  const skis = new THREE.Group(); pose.add(skis);
-  for (const sx of [-0.14, 0.14]) { add(skis, new THREE.BoxGeometry(0.1, 0.04, 1.7), mats.skis, sx, 0.03, 0.02); const t = add(skis, new THREE.BoxGeometry(0.1, 0.04, 0.24), tip, sx, 0.07, 0.92); t.rotation.x = -0.5; add(skis, new THREE.BoxGeometry(0.15, 0.22, 0.32), dark, sx, 0.15, 0); }
-  const legs = [];
-  for (const sx of [-0.13, 0.13]) { const hip = new THREE.Group(); hip.position.set(sx, 0.85, 0); pose.add(hip); const leg = add(hip, new THREE.BoxGeometry(0.17, 0.8, 0.19).translate(0, -0.4, 0), mats.pants, 0, 0, 0); legs.push({ hip, leg }); }
-  const upper = new THREE.Group(); upper.position.y = 0.85; pose.add(upper);
-  add(upper, new THREE.BoxGeometry(0.46, 0.62, 0.3), mats.jacket, 0, 0.32, 0);
-  add(upper, new THREE.BoxGeometry(0.47, 0.07, 0.31), dark, 0, 0.04, 0);
-  add(upper, new THREE.BoxGeometry(0.05, 0.5, 0.01), white, 0, 0.34, 0.155);
-  add(upper, new THREE.CylinderGeometry(0.1, 0.12, 0.1, 8), mats.jacket, 0, 0.66, 0);
-  add(upper, new THREE.SphereGeometry(0.135, 12, 10), skin, 0, 0.8, 0);
-  add(upper, new THREE.BoxGeometry(0.29, 0.03, 0.22), dark, 0, 0.82, 0.02);
-  add(upper, new THREE.BoxGeometry(0.27, 0.085, 0.07), mats.goggles, 0, 0.82, 0.115);
-  const hats = { helmet: new THREE.Group(), beanie: new THREE.Group(), cap: new THREE.Group() };
-  add(hats.helmet, new THREE.SphereGeometry(0.158, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.55), mats.hat, 0, 0.81, -0.005);
-  add(hats.helmet, new THREE.BoxGeometry(0.05, 0.025, 0.26), dark, 0, 0.965, -0.01);
-  const bc = add(hats.beanie, new THREE.SphereGeometry(0.148, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.55), mats.hat, 0, 0.8, 0); bc.scale.y = 1.25;
-  add(hats.beanie, new THREE.TorusGeometry(0.138, 0.028, 6, 16).rotateX(Math.PI / 2), mats.hat, 0, 0.855, 0);
-  add(hats.beanie, new THREE.SphereGeometry(0.055, 8, 6), white, 0, 1.0, 0);
-  add(hats.cap, new THREE.SphereGeometry(0.148, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.5), mats.hat, 0, 0.83, 0);
-  add(hats.cap, new THREE.BoxGeometry(0.2, 0.02, 0.15), mats.hat, 0, 0.84, 0.17);
-  Object.values(hats).forEach(h => upper.add(h));
-  const arms = [];
-  for (const sx of [-0.29, 0.29]) {
-    const sh = new THREE.Group(); sh.position.set(sx, 0.56, 0); upper.add(sh);
-    add(sh, new THREE.BoxGeometry(0.12, 0.5, 0.13).translate(0, -0.25, 0), mats.jacket, 0, 0, 0);
-    const hand = new THREE.Group(); hand.position.y = -0.52; sh.add(hand);
-    add(hand, new THREE.BoxGeometry(0.11, 0.12, 0.12), mats.gloves, 0, 0, 0);
-    const pl = add(hand, new THREE.CylinderGeometry(0.014, 0.014, 1.2, 5).translate(0, -0.52, 0), pole, 0, 0, 0); pl.rotation.x = 0.7;
-    arms.push(sh);
-  }
-  return { root, pose, skis, legs, upper, arms, mats, hats, crouch: 0.3, lift: 0, sitT: 0 };
+let LOOK; try { LOOK = sanitizeLook(JSON.parse(store.get('fjallpark.look', 'null')) || defLook); } catch (e) { LOOK = sanitizeLook(defLook); }
+
+/* ---- detailed avatar: each body part is one merged, vertex-coloured mesh ---- */
+const AV_MAT = new THREE.MeshLambertMaterial({ vertexColors: true });
+const AV_LENS = new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 120, specular: 0xf0f0f0 });
+const HIP_Y = 0.92, L1 = 0.43, L2 = 0.40, ANK = 0.16;
+const _col = new C();
+const shade = (hex, f) => { _col.set(hex); _col.setRGB(Math.min(1, _col.r * f), Math.min(1, _col.g * f), Math.min(1, _col.b * f)); return '#' + _col.getHexString(); };
+const Mx = (x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => new THREE.Matrix4().compose(new V3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)), new V3(sx, sy, sz));
+const Bx = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+const Cy = (rt, rb, h, seg = 12, open = false) => new THREE.CylinderGeometry(rt, rb, h, seg, 1, open);
+const Sp = (r, ws = 12, hs = 8, ps, pl, ts, tl) => new THREE.SphereGeometry(r, ws, hs, ps, pl, ts, tl);
+const To = (r, t, rs = 6, ts = 16, arc) => new THREE.TorusGeometry(r, t, rs, ts, arc);
+function Geo() {
+  const list = [];
+  const api = {
+    add(g, col, m) {
+      const n = g.index ? g.toNonIndexed() : g.clone(); g.dispose();
+      if (m) n.applyMatrix4(m);
+      if (n.attributes.uv) n.deleteAttribute('uv');
+      if (!n.attributes.normal) n.computeVertexNormals();
+      _col.set(col); const cnt = n.attributes.position.count, cc = new Float32Array(cnt * 3);
+      for (let i = 0; i < cnt; i++) { cc[i * 3] = _col.r; cc[i * 3 + 1] = _col.g; cc[i * 3 + 2] = _col.b; }
+      n.setAttribute('color', new THREE.BufferAttribute(cc, 3)); list.push(n); return api;
+    },
+    done() {
+      let t = 0; list.forEach(g => t += g.attributes.position.count);
+      const P = new Float32Array(t * 3), N = new Float32Array(t * 3), Cc = new Float32Array(t * 3); let o = 0;
+      for (const g of list) { P.set(g.attributes.position.array, o * 3); N.set(g.attributes.normal.array, o * 3); Cc.set(g.attributes.color.array, o * 3); o += g.attributes.position.count; g.dispose(); }
+      const out = new THREE.BufferGeometry();
+      out.setAttribute('position', new THREE.BufferAttribute(P, 3)); out.setAttribute('normal', new THREE.BufferAttribute(N, 3)); out.setAttribute('color', new THREE.BufferAttribute(Cc, 3));
+      out.computeBoundingSphere(); return out;
+    },
+  };
+  return api;
 }
-function applyLook(av, look) { for (const [k] of LOOK_PARTS) av.mats[k].color.set(look[k]); for (const h in av.hats) av.hats[h].visible = h === look.hatType; }
+function skisGeo(look) {
+  const g = Geo(), sc = look.skis.c, top = shade(sc, 1.35), edge = '#30353d', metal = '#aab4c0', boot = '#2a2f37', bootAc = look.jacket.a;
+  for (const sx of [-0.14, 0.14]) {
+    const side = sx > 0 ? 1 : -1;
+    g.add(Bx(0.095, 0.024, 1.42), sc, Mx(sx, 0.03, 0));
+    g.add(Bx(0.097, 0.008, 1.42), edge, Mx(sx, 0.016, 0));
+    g.add(Bx(0.09, 0.024, 0.24), sc, Mx(sx, 0.072, 0.8, -0.42));
+    g.add(Bx(0.088, 0.024, 0.17), sc, Mx(sx, 0.052, -0.775, 0.3));
+    g.add(Bx(0.032, 0.006, 1.15), top, Mx(sx, 0.044, 0.04));
+    g.add(Bx(0.06, 0.005, 0.12), '#f4f6f8', Mx(sx, 0.046, 0.55));
+    g.add(Bx(0.085, 0.05, 0.12), metal, Mx(sx, 0.067, 0.2));
+    g.add(Bx(0.085, 0.075, 0.15), metal, Mx(sx, 0.08, -0.2));
+    g.add(Bx(0.04, 0.03, 0.06), '#d8352a', Mx(sx, 0.11, -0.25));
+    g.add(Bx(0.12, 0.11, 0.32), boot, Mx(sx, 0.12, 0.01));
+    g.add(Bx(0.124, 0.03, 0.06), bootAc, Mx(sx, 0.135, 0.15));
+    g.add(Cy(0.072, 0.078, 0.24, 12), boot, Mx(sx, 0.28, -0.02, 0.18));
+    g.add(Cy(0.081, 0.081, 0.035, 12), '#15181d', Mx(sx, 0.385, -0.04, 0.18));
+    for (let k = 0; k < 3; k++) g.add(Bx(0.012, 0.022, 0.055), metal, Mx(sx + side * 0.072, 0.15 + k * 0.08, 0.05 - k * 0.035));
+  }
+  return g.done();
+}
+function thighGeo(look, side) {
+  const g = Geo(), P = look.pants, c = P.c, d = shade(c, 0.78), w = P.m === 'baggy' ? 1.28 : 1;
+  g.add(Sp(0.088 * w, 12, 8), c, Mx(0, 0, 0));
+  g.add(Cy(0.088 * w, 0.072 * w, L1, 14), c, Mx(0, -L1 / 2, 0));
+  if (P.m !== 'bib') { g.add(Bx(0.024, 0.13, 0.11), d, Mx(side * 0.08 * w, -0.22, 0)); g.add(Bx(0.026, 0.035, 0.115), shade(c, 0.65), Mx(side * 0.081 * w, -0.16, 0)); }
+  if (P.m === 'shell') g.add(Bx(0.01, 0.3, 0.012), look.jacket.a, Mx(side * 0.083, -0.2, -0.03));
+  if (P.m === 'bib') g.add(Bx(0.14, 0.012, 0.02), d, Mx(0, -0.12, 0.08));
+  return g.done();
+}
+function shinGeo(look, side) {
+  const g = Geo(), P = look.pants, c = P.c, d = shade(c, 0.78), w = P.m === 'baggy' ? 1.28 : 1;
+  g.add(Sp(0.075 * w, 12, 8), c, Mx(0, 0, 0));
+  g.add(Cy(0.072 * w, 0.08 * w, L2 - 0.06, 14), c, Mx(0, -(L2 - 0.06) / 2, 0));
+  g.add(Cy(0.088 * w, 0.102 * w, 0.09, 14), c, Mx(0, -L2 + 0.05, 0));
+  g.add(Cy(0.103 * w, 0.103 * w, 0.022, 14), d, Mx(0, -L2 + 0.012, 0));
+  g.add(Bx(0.11 * w, 0.09, 0.02), d, Mx(0, -0.06, 0.07 * w));
+  if (P.m === 'baggy') g.add(Bx(0.02, 0.2, 0.02), d, Mx(side * 0.1, -0.2, 0));
+  return g.done();
+}
+function torsoGeo(look) {
+  const g = Geo(), J = look.jacket, c = J.c, a = J.a, d = shade(c, 0.76), P = look.pants, zf = 0.68;
+  const R = J.m === 'puffer' ? 0.21 : 0.195, fz = R * 0.93 * zf + 0.004;
+  g.add(Cy(R, R * 0.88, 0.6, 18), c, Mx(0, 0.32, 0, 0, 0, 0, 1, 1, zf));
+  g.add(Sp(R, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2), c, Mx(0, 0.6, 0, 0, 0, 0, 1, 0.42, zf));
+  g.add(Cy(R * 0.9, R * 0.89, 0.06, 18), J.m === 'puffer' ? d : a, Mx(0, 0.035, 0, 0, 0, 0, 1, 1, zf));
+  if (J.m === 'shell') {
+    g.add(Cy(R * 1.012, R * 0.995, 0.11, 18), a, Mx(0, 0.52, 0, 0, 0, 0, 1, 1, zf));
+    g.add(Bx(0.014, 0.52, 0.012), shade(c, 0.55), Mx(0, 0.32, fz));
+    g.add(Bx(0.02, 0.035, 0.016), '#c9d3de', Mx(0, 0.58, fz + 0.004));
+    for (const sx of [-1, 1]) { g.add(Bx(0.09, 0.085, 0.012), d, Mx(sx * 0.085, 0.42, fz - 0.002)); g.add(Bx(0.08, 0.008, 0.014), a, Mx(sx * 0.085, 0.46, fz + 0.002)); g.add(Bx(0.012, 0.42, 0.03), d, Mx(sx * R * 0.98, 0.3, 0)); }
+    g.add(To(0.1, 0.045, 8, 14, Math.PI), c, Mx(0, 0.66, -0.01, -Math.PI / 2, 0, 0));
+    g.add(Cy(0.1, 0.112, 0.12, 14), a, Mx(0, 0.67, 0));
+  } else if (J.m === 'puffer') {
+    for (let i = 0; i < 6; i++) g.add(To(R * (0.985 - i * 0.012), 0.03, 6, 22), shade(c, i % 2 ? 0.9 : 1.04), Mx(0, 0.08 + i * 0.095, 0, Math.PI / 2, 0, 0, 1, zf, 1));
+    g.add(Bx(0.014, 0.56, 0.02), shade(c, 0.55), Mx(0, 0.33, fz + 0.03));
+    g.add(Cy(0.115, 0.125, 0.14, 14), c, Mx(0, 0.68, 0));
+    g.add(Cy(0.116, 0.116, 0.02, 14), a, Mx(0, 0.75, 0));
+  } else {
+    g.add(Bx(0.014, 0.2, 0.012), shade(c, 0.55), Mx(0, 0.52, fz));
+    g.add(Bx(0.24, 0.15, 0.02), d, Mx(0, 0.24, fz + 0.004));
+    g.add(Bx(0.24, 0.014, 0.024), a, Mx(0, 0.315, fz + 0.006));
+    for (const sx of [-1, 1]) g.add(Bx(0.014, 0.5, 0.15), a, Mx(sx * R * 0.99, 0.32, 0));
+    g.add(To(0.115, 0.06, 8, 14, Math.PI), c, Mx(0, 0.66, -0.02, -Math.PI / 2, 0, 0));
+    g.add(Cy(0.1, 0.11, 0.1, 14), c, Mx(0, 0.67, 0));
+  }
+  if (P.m === 'bib') {
+    const pc = P.c, pd = shade(pc, 0.78);
+    g.add(Bx(0.26, 0.3, 0.02), pc, Mx(0, 0.2, fz + 0.01));
+    g.add(Bx(0.15, 0.07, 0.022), pd, Mx(0, 0.28, fz + 0.014));
+    for (const sx of [-1, 1]) {
+      g.add(Bx(0.036, 0.3, 0.016), pc, Mx(sx * 0.09, 0.5, fz + 0.004, -0.15));
+      g.add(Bx(0.036, 0.016, 0.28), pc, Mx(sx * 0.09, 0.65, 0));
+      g.add(Bx(0.036, 0.6, 0.016), pc, Mx(sx * 0.09, 0.35, -fz - 0.004));
+      g.add(Bx(0.03, 0.03, 0.02), '#c9d3de', Mx(sx * 0.09, 0.36, fz + 0.014));
+    }
+  } else g.add(Cy(R * 0.93, R * 0.93, 0.07, 18), P.c, Mx(0, -0.005, 0, 0, 0, 0, 1, 1, zf));
+  return g.done();
+}
+function headGeo(look) {
+  const g = Geo(), skin = '#e2a885', H = look.hat, hc = H.c, hd = shade(hc, 0.72), J = look.jacket, G = look.goggles, frame = '#1d2128';
+  g.add(Cy(0.055, 0.06, 0.08, 12), skin, Mx(0, 0.04, 0));
+  g.add(Cy(0.075, 0.082, 0.1, 14), J.a, Mx(0, 0.07, 0));
+  g.add(Sp(0.12, 18, 14), skin, Mx(0, 0.2, 0, 0, 0, 0, 0.92, 1.05, 1));
+  g.add(Bx(0.028, 0.05, 0.04), shade(skin, 0.94), Mx(0, 0.17, 0.115, 0.3));
+  g.add(Bx(0.05, 0.008, 0.01), '#a65b4a', Mx(0, 0.125, 0.112));
+  for (const sx of [-1, 1]) g.add(Sp(0.025, 8, 6), skin, Mx(sx * 0.11, 0.19, 0, 0, 0, 0, 0.6, 1, 1));
+  if (H.m === 'helmet') {
+    g.add(Sp(0.137, 20, 12, 0, Math.PI * 2, 0, Math.PI * 0.56), hc, Mx(0, 0.21, -0.005, 0, 0, 0, 1, 1.02, 1.08));
+    for (const k of [-0.045, 0, 0.045]) g.add(Bx(0.018, 0.014, 0.13), hd, Mx(k, 0.35, -0.02));
+    for (const sx of [-1, 1]) g.add(Cy(0.05, 0.05, 0.026, 14), hd, Mx(sx * 0.128, 0.17, -0.01, 0, 0, Math.PI / 2));
+    g.add(Bx(0.2, 0.014, 0.045), hd, Mx(0, 0.29, 0.135, -0.3));
+    g.add(Bx(0.012, 0.11, 0.012), hd, Mx(0.06, 0.1, 0.06, 0.4));
+  } else if (H.m === 'beanie') {
+    g.add(Sp(0.13, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.55), hc, Mx(0, 0.2, 0, 0, 0, 0, 1, 1.28, 1));
+    g.add(To(0.128, 0.032, 8, 22), hd, Mx(0, 0.245, 0, Math.PI / 2, 0, 0));
+    g.add(To(0.112, 0.012, 6, 22), J.a, Mx(0, 0.31, 0, Math.PI / 2, 0, 0));
+    g.add(Sp(0.058, 12, 10), shade(hc, 1.35), Mx(0, 0.385, 0));
+  } else {
+    g.add(Sp(0.13, 18, 10, 0, Math.PI * 2, 0, Math.PI * 0.5), hc, Mx(0, 0.235, 0));
+    g.add(Bx(0.2, 0.016, 0.13), hc, Mx(0, 0.245, 0.15, 0.1));
+    g.add(Sp(0.016, 8, 6), hd, Mx(0, 0.365, 0));
+    g.add(Sp(0.122, 14, 10), '#4a3426', Mx(0, 0.19, -0.025, 0, 0, 0, 0.98, 0.95, 0.95));
+    g.add(Bx(0.07, 0.04, 0.005), J.a, Mx(0, 0.29, 0.128));
+  }
+  if (G.m !== 'sun') {
+    g.add(To(0.142, 0.012, 4, 26), J.a, Mx(0, 0.235, -0.005, Math.PI / 2, 0, 0, 1, 1.1, 1));
+    if (G.m === 'frame') g.add(Bx(0.222, 0.092, 0.045), frame, Mx(0, 0.235, 0.115));
+    else g.add(Sp(0.152, 20, 8, Math.PI / 2 - 0.92, 1.84, Math.PI / 2 - 0.36, 0.72), frame, Mx(0, 0.225, -0.012));
+  } else {
+    for (const sx of [-1, 1]) g.add(Bx(0.006, 0.012, 0.14), frame, Mx(sx * 0.098, 0.215, 0.05));
+    g.add(Bx(0.03, 0.01, 0.012), frame, Mx(0, 0.22, 0.128));
+  }
+  return g.done();
+}
+function lensGeo(look) {
+  const g = Geo(), G = look.goggles, lc = G.c;
+  if (G.m === 'frame') g.add(Bx(0.2, 0.072, 0.012), lc, Mx(0, 0.235, 0.139));
+  else if (G.m === 'sphere') g.add(Sp(0.157, 20, 8, Math.PI / 2 - 0.85, 1.7, Math.PI / 2 - 0.3, 0.6), lc, Mx(0, 0.225, -0.012));
+  else for (const sx of [-1, 1]) g.add(Cy(0.032, 0.032, 0.008, 16), lc, Mx(sx * 0.045, 0.215, 0.128, Math.PI / 2));
+  return g.done();
+}
+function uArmGeo(look, side) {
+  const g = Geo(), J = look.jacket, c = J.c, w = J.m === 'puffer' ? 1.22 : 1;
+  g.add(Sp(0.07 * w, 12, 8), c, Mx(0, 0, 0));
+  g.add(Cy(0.064 * w, 0.057 * w, 0.3, 14), c, Mx(0, -0.15, 0));
+  if (J.m === 'puffer') for (let k = 0; k < 2; k++) g.add(To(0.06 * w, 0.015, 6, 14), shade(c, 0.9), Mx(0, -0.09 - k * 0.11, 0, Math.PI / 2, 0, 0));
+  if (J.m === 'shell') g.add(Bx(0.012, 0.28, 0.024), J.a, Mx(side * 0.064, -0.15, 0));
+  if (J.m === 'anorak') g.add(Bx(0.014, 0.28, 0.03), J.a, Mx(side * 0.062 * w, -0.15, 0));
+  if (side > 0) { g.add(Bx(0.012, 0.06, 0.08), '#f4f6f8', Mx(side * 0.066 * w, -0.12, 0)); g.add(Bx(0.014, 0.018, 0.06), '#13233a', Mx(side * 0.067 * w, -0.13, 0)); g.add(Bx(0.014, 0.012, 0.05), '#ff5a1f', Mx(side * 0.067 * w, -0.103, 0)); }
+  return g.done();
+}
+function fArmGeo(look, side) {
+  const g = Geo(), J = look.jacket, c = J.c, Gl = look.gloves, gc = Gl.c, w = J.m === 'puffer' ? 1.15 : 1;
+  g.add(Sp(0.06 * w, 12, 8), c, Mx(0, 0, 0));
+  g.add(Cy(0.057 * w, 0.052 * w, 0.24, 14), c, Mx(0, -0.12, 0));
+  g.add(Cy(0.057 * w, 0.057 * w, 0.035, 14), J.a, Mx(0, -0.225, 0));
+  if (Gl.m === 'mitten') {
+    g.add(Cy(0.06, 0.064, 0.07, 14), shade(gc, 0.8), Mx(0, -0.25, 0));
+    g.add(Sp(0.056, 14, 10), gc, Mx(0, -0.315, 0.012, 0, 0, 0, 0.88, 1.35, 1));
+    g.add(Sp(0.024, 10, 8), gc, Mx(-side * 0.047, -0.285, 0.03, 0, 0, 0, 1, 1.4, 1));
+  } else {
+    g.add(Cy(0.06, 0.066, 0.07, 14), shade(gc, 0.8), Mx(0, -0.25, 0));
+    g.add(Bx(0.088, 0.1, 0.078), gc, Mx(0, -0.31, 0.01));
+    g.add(Bx(0.086, 0.055, 0.07), gc, Mx(0, -0.37, 0.03, 0.55));
+    for (let f = 0; f < 3; f++) g.add(Bx(0.004, 0.05, 0.072), shade(gc, 0.7), Mx(-0.021 + f * 0.021, -0.37, 0.031, 0.55));
+    g.add(Bx(0.026, 0.055, 0.028), gc, Mx(-side * 0.052, -0.29, 0.035, 0.2));
+    g.add(Bx(0.06, 0.02, 0.005), shade(gc, 1.6), Mx(0, -0.29, 0.05));
+  }
+  return g.done();
+}
+const POLE_GEO = (() => {
+  const g = Geo();
+  g.add(Cy(0.021, 0.025, 0.15, 10), '#1b1b1b', Mx(0, -0.01, 0));
+  g.add(Cy(0.027, 0.027, 0.02, 10), '#ff5a1f', Mx(0, 0.07, 0));
+  g.add(To(0.035, 0.006, 4, 12, Math.PI * 1.4), '#ff5a1f', Mx(0, 0.09, 0, 0, Math.PI / 2, 0));
+  g.add(Cy(0.009, 0.007, 1.1, 8), '#b8c2cc', Mx(0, -0.62, 0));
+  g.add(To(0.045, 0.008, 4, 14), '#2a2f37', Mx(0, -1.07, 0, Math.PI / 2, 0, 0));
+  for (let k = 0; k < 3; k++) g.add(Bx(0.09, 0.004, 0.006), '#2a2f37', Mx(0, -1.07, 0, 0, k * Math.PI / 3, 0));
+  g.add(Cy(0.004, 0.002, 0.05, 4), '#8a95a3', Mx(0, -1.19, 0));
+  return g.done();
+})();
+function buildAvatar(look) {
+  const root = new THREE.Group(), pose = new THREE.Group(); root.add(pose);
+  const mesh = (mat = AV_MAT) => { const m = new THREE.Mesh(new THREE.BufferGeometry(), mat); m.castShadow = true; return m; };
+  const skisG = new THREE.Group(); pose.add(skisG); const skisM = mesh(); skisG.add(skisM);
+  const legs = [];
+  for (const side of [1, -1]) {
+    const hip = new THREE.Group(); hip.position.set(side * 0.11, HIP_Y, 0); pose.add(hip);
+    const th = mesh(); hip.add(th);
+    const knee = new THREE.Group(); knee.position.y = -L1; hip.add(knee);
+    const sh = mesh(); knee.add(sh);
+    legs.push({ side, hip, knee, th, sh });
+  }
+  const upper = new THREE.Group(); upper.position.y = HIP_Y; pose.add(upper);
+  const torsoM = mesh(); upper.add(torsoM);
+  const headG = new THREE.Group(); headG.position.y = 0.6; upper.add(headG);
+  const headM = mesh(); headG.add(headM);
+  const lensM = mesh(AV_LENS); lensM.castShadow = false; headG.add(lensM);
+  const arms = [];
+  for (const side of [1, -1]) {
+    const sh = new THREE.Group(); sh.position.set(side * 0.235, 0.55, 0); upper.add(sh);
+    const ua = mesh(); sh.add(ua);
+    const el = new THREE.Group(); el.position.y = -0.3; sh.add(el);
+    const fa = mesh(); el.add(fa);
+    const pg = new THREE.Group(); pg.position.y = -0.31; el.add(pg);
+    const pm = new THREE.Mesh(POLE_GEO, AV_MAT); pm.castShadow = true; pg.add(pm);
+    arms.push({ side, sh, el, ua, fa, pg });
+  }
+  const av = { root, pose, skisG, skisM, legs, upper, torsoM, headG, headM, lensM, arms, crouch: 0.3, lift: 0, sitT: 0, pushT: 1, look: null };
+  if (look) applyLook(av, look);
+  return av;
+}
+function applyLook(av, look) {
+  const set = (m, g) => { if (m.geometry) m.geometry.dispose(); m.geometry = g; };
+  set(av.skisM, skisGeo(look));
+  for (const L of av.legs) { set(L.th, thighGeo(look, L.side)); set(L.sh, shinGeo(look, L.side)); }
+  set(av.torsoM, torsoGeo(look)); set(av.headM, headGeo(look)); set(av.lensM, lensGeo(look));
+  for (const A of av.arms) { set(A.ua, uArmGeo(look, A.side)); set(A.fa, fArmGeo(look, A.side)); }
+  av.look = look;
+}
+// Pole push: reach forward, plant, push back past the hips, recover.
+const PUSH_KF = { t: [0, 0.3, 0.72, 1], sh: [-0.35, -1.15, 0.55, -0.35], el: [-0.75, -0.35, -0.1, -0.75], pole: [1.25, 1.35, 0.45, 1.25], lean: [0, -0.08, 0.32, 0] };
+function kfv(arr, t) { const T = PUSH_KF.t; for (let i = 1; i < T.length; i++) if (t <= T[i]) return lerp(arr[i - 1], arr[i], smooth(0, 1, (t - T[i - 1]) / (T[i] - T[i - 1]))); return arr[arr.length - 1]; }
 function poseAvatar(av, st, dt) {
-  const k = 1 - Math.exp(-12 * dt);
-  av.crouch = lerp(av.crouch, st.c, k); av.lift = lerp(av.lift, st.lift, k); av.sitT = lerp(av.sitT, st.sit ? 1 : 0, k);
-  const c = av.crouch * (1 - av.sitT), s = av.sitT, hipY = 0.85 - 0.3 * c;
-  for (const L of av.legs) { L.hip.position.y = hipY; L.hip.rotation.x = -1.45 * s; L.leg.scale.y = lerp((hipY - 0.05 - av.lift) / 0.8, 1, s); }
-  av.upper.position.y = hipY; av.upper.rotation.x = lerp(0.18 + 0.4 * c, -0.08, s);
-  av.skis.position.set(0, lerp(av.lift, 0.6, s), lerp(0, 0.78, s)); av.skis.rotation.y = lerp(av.skis.rotation.y, st.slide || 0, k);
-  av.arms.forEach((a, i) => { a.rotation.x = lerp(a.rotation.x, st.grab && i === 0 ? 0.25 : st.crash ? -2.4 : s ? -0.3 : -0.55, k); a.rotation.z = (i ? -1 : 1) * (st.crash ? 0.9 : st.grind ? 1.1 : 0.12); });
+  const k = 1 - Math.exp(-12 * dt), ka = 1 - Math.exp(-22 * dt);
+  av.crouch = lerp(av.crouch, st.c, k); av.lift = lerp(av.lift, st.lift || 0, k); av.sitT = lerp(av.sitT, st.sit ? 1 : 0, k);
+  av.pushT = Math.min(1, av.pushT + dt / 0.62);
+  const s = av.sitT, c = av.crouch * (1 - s), hipY = HIP_Y - 0.32 * c;
+  // legs: two-bone IK so knees bend instead of legs shrinking
+  const d = clamp(hipY - (ANK + av.lift), 0.3, L1 + L2 - 0.001);
+  const a = Math.acos(clamp((L1 * L1 + d * d - L2 * L2) / (2 * L1 * d), -1, 1));
+  const kn = Math.acos(clamp((L1 * L1 + L2 * L2 - d * d) / (2 * L1 * L2), -1, 1));
+  const th = lerp(-a, -1.45, s), shr = lerp(Math.PI - kn, 1.35, s);
+  for (const L of av.legs) { L.hip.position.y = hipY; L.hip.rotation.x = th; L.knee.rotation.x = shr; }
+  const kneeY = hipY - Math.cos(th) * L1, kneeZ = -Math.sin(th) * L1, ang = th + shr;
+  av.skisG.position.set(0, kneeY - Math.cos(ang) * L2 - ANK, kneeZ - Math.sin(ang) * L2);
+  av.skisG.rotation.y = lerp(av.skisG.rotation.y, st.slide || 0, k);
+  const p = av.pushT < 1 && !st.sit && !st.crash ? av.pushT : -1;
+  av.upper.position.y = hipY;
+  av.upper.rotation.x = lerp(av.upper.rotation.x, lerp(0.12 + 0.45 * c, -0.06, s) + (p >= 0 ? kfv(PUSH_KF.lean, p) : 0), ka);
+  av.headG.rotation.x = -av.upper.rotation.x * 0.6;
+  for (const A of av.arms) {
+    let shx = -0.35, shz = A.side * 0.12, elx = -0.75, pol = 1.25;
+    if (st.crash) { shx = -2.4 + Math.sin(time * 18 + A.side) * 0.4; shz = A.side * 0.9; elx = -0.4; pol = 0.3; }
+    else if (s > 0.5) { shx = -0.5; elx = -0.9; pol = 1.6; }
+    else if (st.grind) { shx = -0.3; shz = A.side * 1.15; elx = -0.3; pol = 1.0; }
+    else if (st.grab && A.side === -1) { shx = -0.2; shz = 0.1; elx = -0.15; pol = 1.4; }
+    else if (p >= 0) { shx = kfv(PUSH_KF.sh, p); elx = kfv(PUSH_KF.el, p); pol = kfv(PUSH_KF.pole, p); }
+    else if (st.air) { shx = -0.6; shz = A.side * 0.45; elx = -0.5; pol = 1.3; }
+    else if (c > 0.7) { shx = -0.95; shz = A.side * 0.05; elx = -1.25; pol = 3.3; }
+    A.sh.rotation.x = lerp(A.sh.rotation.x, shx, ka); A.sh.rotation.z = lerp(A.sh.rotation.z, shz, ka);
+    A.el.rotation.x = lerp(A.el.rotation.x, elx, ka); A.pg.rotation.x = lerp(A.pg.rotation.x, pol, ka);
+  }
   av.pose.rotation.z = lerp(av.pose.rotation.z, st.lean || 0, k);
   av.pose.rotation.x = lerp(av.pose.rotation.x, st.crash ? -1.3 : 0, k);
   av.pose.position.y = lerp(av.pose.position.y, st.crash ? 0.15 : 0, k);
 }
-function applyFPLook() { SK.mats.jacket.color.set(LOOK.jacket); SK.mats.glove.color.set(LOOK.gloves); SK.mats.ski.color.set(LOOK.skis); }
+function applyFPLook() { SK.mats.jacket.color.set(LOOK.jacket.c); SK.mats.glove.color.set(LOOK.gloves.c); SK.mats.ski.color.set(LOOK.skis.c); }
 applyFPLook();
-let prev = null, lookFrom = 'start';
+
+/* ---- appearance screen ---- */
+let prev = null, lookFrom = 'start', lookCat = 'jacket', prevPushT = 0;
 function buildLookUI() {
+  const cats = $('lookCats');
+  if (!cats.childElementCount) CATS.forEach(([k, t]) => { const b = document.createElement('button'); b.textContent = t; b.dataset.cat = k; b.setAttribute('role', 'tab'); b.addEventListener('click', () => { lookCat = k; buildLookUI(); }); cats.appendChild(b); });
+  cats.querySelectorAll('button').forEach(b => { const on = b.dataset.cat === lookCat; b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-selected', String(on)); });
   const host = $('lookOpts'); host.textContent = '';
+  const part = LOOK[lookCat];
   const row = (label, fill) => { const r = document.createElement('div'); r.className = 'opt'; const sp = document.createElement('span'); sp.textContent = label; const sw = document.createElement('div'); sw.className = 'sw'; fill(sw); r.append(sp, sw); host.appendChild(r); };
-  for (const [k, label] of LOOK_PARTS) row(label, sw => SWATCH.forEach(hex => { const b = document.createElement('button'); b.style.background = hex; b.dataset.k = k; b.dataset.v = hex; b.setAttribute('aria-label', label.toLowerCase() + ' ' + hex); b.addEventListener('click', () => { LOOK[k] = hex; refreshLook(); }); sw.appendChild(b); }));
-  row('MODELL', sw => HAT_TYPES.forEach(([v, t]) => { const b = document.createElement('button'); b.className = 'txt'; b.textContent = t; b.dataset.k = 'hatType'; b.dataset.v = v; b.addEventListener('click', () => { LOOK.hatType = v; refreshLook(); }); sw.appendChild(b); }));
+  const chip = (sw, text, on, fn) => { const b = document.createElement('button'); b.className = 'txt'; b.textContent = text; b.setAttribute('aria-pressed', String(on)); b.addEventListener('click', fn); sw.appendChild(b); };
+  const swatch = (sw, hex, on, label, fn) => { const b = document.createElement('button'); b.style.background = hex; b.setAttribute('aria-label', label + ' ' + hex); b.setAttribute('aria-pressed', String(on)); b.addEventListener('click', fn); sw.appendChild(b); };
+  if (MODELS[lookCat]) row('MODELL', sw => MODELS[lookCat].forEach(([v, t]) => chip(sw, t, part.m === v, () => { part.m = v; lookChanged(); })));
+  const colors = lookCat === 'goggles' ? LENS : SWATCH;
+  row(lookCat === 'goggles' ? 'LINS' : 'FÄRG', sw => colors.forEach(hex => swatch(sw, hex, part.c === hex, 'färg', () => { part.c = hex; lookChanged(); })));
+  if (lookCat === 'jacket') row('DETALJER', sw => SWATCH.forEach(hex => swatch(sw, hex, part.a === hex, 'detaljfärg', () => { part.a = hex; lookChanged(); })));
 }
-function refreshLook() {
-  $('lookOpts').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(LOOK[b.dataset.k] === b.dataset.v)));
-  if (prev) applyLook(prev.av, LOOK); applyFPLook();
-}
+function lookChanged() { buildLookUI(); if (prev) applyLook(prev.av, LOOK); applyFPLook(); }
 function openLook(from) {
   lookFrom = from; (from === 'pause' ? pauseEl : startEl).hidden = true; lookEl.hidden = false;
   $('nameIn').value = LOOK.name;
-  if (!$('lookOpts').childElementCount) buildLookUI();
+  buildLookUI();
   if (!prev) {
     try {
       const cv = $('prevC'), r = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true });
       r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xeaf3ff, 0x8a9bb4, 0.75));
-      const dl = new THREE.DirectionalLight(0xfff3e0, 0.7); dl.position.set(2, 4, 3); sc.add(dl);
-      const floor = new THREE.Mesh(new THREE.CircleGeometry(1.4, 32), Lam(0xf2f6fb)); floor.rotation.x = -Math.PI / 2; sc.add(floor);
-      const av = buildAvatar(); sc.add(av.root);
-      const cam = new THREE.PerspectiveCamera(30, 5 / 6, 0.1, 50); cam.position.set(0, 1.3, 4.6); cam.lookAt(0, 0.9, 0);
-      prev = { r, sc, av, cam, w: 0 };
+      const dl = new THREE.DirectionalLight(0xfff3e0, 0.75); dl.position.set(2, 4, 3); sc.add(dl);
+      const floor = new THREE.Mesh(new THREE.CircleGeometry(1.4, 40), Lam(0xf2f6fb)); floor.rotation.x = -Math.PI / 2; sc.add(floor);
+      const av = buildAvatar(LOOK); sc.add(av.root);
+      const cam = new THREE.PerspectiveCamera(28, 5 / 6, 0.1, 50); cam.position.set(0, 1.25, 4.4); cam.lookAt(0, 0.95, 0);
+      prev = { r, sc, av, cam, w: 0, h: 0 };
     } catch (e) { prev = null; }
-  }
-  refreshLook();
+  } else applyLook(prev.av, LOOK);
 }
 function renderPreview(dt) {
   const cv = $('prevC'), w = cv.clientWidth, h = cv.clientHeight;
   if (w && h && (w !== prev.w || h !== prev.h)) { prev.r.setSize(w, h, false); prev.cam.aspect = w / h; prev.cam.updateProjectionMatrix(); prev.w = w; prev.h = h; }
-  prev.av.root.rotation.y += dt * 0.7; poseAvatar(prev.av, { c: 0.3, lift: 0 }, dt); prev.r.render(prev.sc, prev.cam);
+  prevPushT += dt; if (prevPushT > 3.2) { prevPushT = 0; prev.av.pushT = 0; }
+  prev.av.root.rotation.y += dt * 0.6; poseAvatar(prev.av, { c: 0.3, lift: 0 }, dt); prev.r.render(prev.sc, prev.cam);
 }
 $('nameIn').addEventListener('input', e => { LOOK.name = cleanText(e.target.value, 16) || 'Åkare'; });
 $('lookDone').addEventListener('click', () => {
@@ -1707,6 +1968,7 @@ function wsLobby() {
       const getP = id => { let p = peers.get(id); if (!p) { p = { peer: id, isMe: false, presence: {} }; peers.set(id, p); pend.joined.push(p); } return p; };
       const setP = (id, pr) => { const p = getP(id); p.presence = pr && typeof pr === 'object' ? pr : {}; if (!pend.updated.includes(p) && !pend.joined.includes(p)) pend.updated.push(p); };
       const send = () => { timer = null; lastSent = performance.now(); if (alive) tx({ t: 'pres', r: name, p: me.presence }); };
+      const keep = setInterval(() => { if (!alive) { clearInterval(keep); return; } if (Object.keys(me.presence).length && performance.now() - lastSent > 4000) send(); }, 4000);
       const R = {
         name,
         _on(m) {
@@ -1720,7 +1982,7 @@ function wsLobby() {
         _closed() { if (!alive) return; alive = false; errs.forEach(f => { try { f({ code: 'upstream_error' }); } catch (e) { } }); },
         presence(patch) {
           const np = Object.assign({}, me.presence); for (const k in patch) { if (patch[k] === null) delete np[k]; else np[k] = patch[k]; }
-          me.presence = np; const d = performance.now() - lastSent; if (d >= 50) send(); else if (!timer) timer = setTimeout(send, 50 - d);
+          me.presence = np; const d = performance.now() - lastSent; if (d >= 80) send(); else if (!timer) timer = setTimeout(send, 80 - d);
           return Promise.resolve();
         },
         peers: snap,
@@ -1861,7 +2123,7 @@ function makeTag(R, look) {
   c.font = '700 30px "Barlow Condensed", "Arial Narrow", sans-serif';
   const w = Math.min(240, c.measureText(look.name).width + 46), x0 = (256 - w) / 2;
   c.fillStyle = 'rgba(19,35,58,.78)'; c.beginPath(); c.moveTo(x0 + 10, 8); c.lineTo(x0 + w - 10, 8); c.quadraticCurveTo(x0 + w, 8, x0 + w, 18); c.lineTo(x0 + w, 46); c.quadraticCurveTo(x0 + w, 56, x0 + w - 10, 56); c.lineTo(x0 + 10, 56); c.quadraticCurveTo(x0, 56, x0, 46); c.lineTo(x0, 18); c.quadraticCurveTo(x0, 8, x0 + 10, 8); c.fill();
-  c.fillStyle = look.jacket; c.beginPath(); c.arc(x0 + 20, 32, 8, 0, Math.PI * 2); c.fill();
+  c.fillStyle = look.jacket.c; c.beginPath(); c.arc(x0 + 20, 32, 8, 0, Math.PI * 2); c.fill();
   c.fillStyle = '#fff'; c.textBaseline = 'middle'; c.fillText(look.name, x0 + 34, 33, w - 42);
   if (!R.tag) { R.tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), depthWrite: false, transparent: true })); R.tag.scale.set(2.0, 0.5, 1); R.tag.renderOrder = 5; scene.add(R.tag); }
   else R.tag.material.map.needsUpdate = true;
@@ -1872,7 +2134,7 @@ function updateRemote(p) {
   const a = pl.a.slice(0, 11).map(Number); if (a.some(v => !isFinite(v))) return;
   let R = NET.remotes.get(p.peer);
   if (!R) {
-    const av = buildAvatar(); scene.add(av.root);
+    const av = buildAvatar(null); scene.add(av.root);
     const chair = new THREE.Group(); [new THREE.Mesh(hangerGeo, chairMat), new THREE.Mesh(seatGeo, seatMat), new THREE.Mesh(backGeo, seatMat)].forEach(m => chair.add(m)); chair.visible = false; scene.add(chair);
     R = { av, chair, pos: new V3(a[0], a[1], a[2]), tpos: new V3(a[0], a[1], a[2]), vel: new V3(), q: new THREE.Quaternion(a[3], a[4], a[5], a[6]).normalize(), tq: new THREE.Quaternion(), t: performance.now(), st: {}, lookKey: '', name: '', col: '#fff', score: 0, cbK: pl.cb && pl.cb.k, mode: 0 };
     NET.remotes.set(p.peer, R);
@@ -1883,9 +2145,10 @@ function updateRemote(p) {
   if (tmp3.distanceTo(R.tpos) > 25) { R.pos.copy(tmp3); R.vel.set(0, 0, 0); }
   R.tpos.copy(tmp3); R.t = now; R.tq.set(a[3], a[4], a[5], a[6]).normalize();
   R.mode = pl.m | 0;
-  R.st = { c: clamp(a[7], 0, 1), lift: clamp(a[8], 0, 0.4), slide: clamp(a[9], -2, 2), lean: clamp(a[10], -0.5, 0.5), sit: R.mode === 4, crash: R.mode === 3, grind: R.mode === 2, grab: !!pl.g };
+  R.st = { c: clamp(a[7], 0, 1), lift: clamp(a[8], 0, 0.4), slide: clamp(a[9], -2, 2), lean: clamp(a[10], -0.5, 0.5), sit: R.mode === 4, crash: R.mode === 3, grind: R.mode === 2, air: R.mode === 1, grab: !!pl.g };
+  if (pl.pk !== undefined && pl.pk !== R.pk) { if (R.pk !== undefined) R.av.pushT = 0; R.pk = pl.pk; }
   const look = sanitizeLook(pl.l), lk = JSON.stringify(look);
-  if (lk !== R.lookKey) { R.lookKey = lk; applyLook(R.av, look); R.name = look.name; R.col = look.jacket; makeTag(R, look); }
+  if (lk !== R.lookKey) { R.lookKey = lk; applyLook(R.av, look); R.name = look.name; R.col = look.jacket.c; makeTag(R, look); }
   R.score = clamp(+pl.s || 0, 0, 1e9);
   if (pl.cb && typeof pl.cb === 'object' && pl.cb.k !== R.cbK) { R.cbK = pl.cb.k; feedItem(R.name, cleanText(pl.cb.t, 80), clamp(+pl.cb.p || 0, 0, 1e9)); }
 }
@@ -1911,7 +2174,7 @@ function sendState() {
   const now = performance.now(); if (now - NET.lastSend < 50) return; NET.lastSend = now;
   const q = SK.root.quaternion, r2 = v => Math.round(v * 100) / 100, r3 = v => Math.round(v * 1000) / 1000;
   const m = mode === 'lift' ? 4 : mode === 'crash' ? 3 : S.grind ? 2 : S.grounded ? 0 : 1;
-  NET.g.presence({ pl: { a: [r2(S.p.x), r2(S.p.y), r2(S.p.z), r3(q.x), r3(q.y), r3(q.z), r3(q.w), r2(SK.crouch), r2(SK.lift), r2(S.grind ? S.slide : 0), r2(SK.pose.rotation.z)], m, g: S.grabOn ? 1 : 0, s: Math.round(S.score), l: LOOK, cb: NET.cb } }).catch(() => { });
+  NET.g.presence({ pl: { a: [r2(S.p.x), r2(S.p.y), r2(S.p.z), r3(q.x), r3(q.y), r3(q.z), r3(q.w), r2(SK.crouch), r2(SK.lift), r2(S.grind ? S.slide : 0), r2(SK.pose.rotation.z)], m, g: S.grabOn ? 1 : 0, pk: S.pushK, s: Math.round(S.score), l: LOOK, cb: NET.cb } }).catch(() => { });
 }
 function feedItem(name, text, pts) {
   const f = $('feed'), d = document.createElement('div');
@@ -1928,7 +2191,7 @@ function renderBoard() {
   const n = 1 + NET.remotes.size;
   net.textContent = (NET.isHost ? 'Din server' : NET.srvName) + ' · ' + n + '/' + NET.max + (NET.code ? ' · Kod ' + NET.code : '');
   $('pSrv').textContent = NET.srvName + (NET.code ? ' · Kod ' + NET.code : ' · Publik') + (NET.isHost ? ' · Du är värd' : '');
-  const rows = [{ name: LOOK.name, s: S.score, me: true, col: LOOK.jacket, host: NET.isHost }];
+  const rows = [{ name: LOOK.name, s: S.score, me: true, col: LOOK.jacket.c, host: NET.isHost }];
   for (const [peer, R] of NET.remotes) rows.push({ name: R.name || 'Åkare', s: R.score, col: R.col, host: peer === NET.hostPeer });
   rows.sort((x, y) => y.s - x.s);
   board.textContent = '';

@@ -251,7 +251,7 @@ button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
         <label for="srvName">SERVERNAMN<input id="srvName" maxlength="24" autocomplete="off"></label>
         <div class="seg" role="group" aria-label="Typ av server"><button id="pubBtn" aria-pressed="true">Publik</button><button id="privBtn" aria-pressed="false">Privat med kod</button></div>
         <label for="srvMax">MAX SPELARE<select id="srvMax"><option>2</option><option>3</option><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option></select></label>
-        <p class="note">Servern körs på din enhet och spelarna kopplar upp sig direkt mot dig. Stänger du spelet stängs servern.</p>
+        <p class="note">Du blir värd: du bestämmer namn, kod och väder. Stänger du spelet stängs din server.</p>
         <button class="go" id="hostBtn">Skapa server</button>
       </div>
     </div>
@@ -1689,10 +1689,61 @@ async function p2pLobby() {
   lob.join = rn => Promise.resolve(p2pRoom(T, rn.startsWith('prv-') ? { password: 'fjallpark-' + rn } : {}, rn));
   return lob;
 }
+// Home server transport: one WebSocket to the server that also serves this page.
+function wsLobby() {
+  return new Promise(resolve => {
+    let ws, done = false;
+    try { ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws'); } catch (e) { resolve(null); return; }
+    const rooms = new Map();
+    const finish = v => { if (!done) { done = true; clearTimeout(to); resolve(v); } };
+    const to = setTimeout(() => finish(null), 8000);
+    const tx = o => { if (ws.readyState === 1) ws.send(JSON.stringify(o)); };
+    function mk(name) {
+      const peers = new Map(), me = { peer: 'me', isMe: true, presence: {} };
+      let hs = [], errs = [], pend = { joined: [], left: [], updated: [] }, sch = false, lastSent = 0, timer = null, alive = true;
+      const snap = () => [me, ...peers.values()];
+      const flush = () => { sch = false; if (!alive) return; const ch = Object.assign({ peers: snap() }, pend); pend = { joined: [], left: [], updated: [] }; hs.slice().forEach(h => { try { h(ch); } catch (e) { console.error(e); } }); };
+      const later = () => { if (!sch) { sch = true; setTimeout(flush, 16); } };
+      const getP = id => { let p = peers.get(id); if (!p) { p = { peer: id, isMe: false, presence: {} }; peers.set(id, p); pend.joined.push(p); } return p; };
+      const setP = (id, pr) => { const p = getP(id); p.presence = pr && typeof pr === 'object' ? pr : {}; if (!pend.updated.includes(p) && !pend.joined.includes(p)) pend.updated.push(p); };
+      const send = () => { timer = null; lastSent = performance.now(); if (alive) tx({ t: 'pres', r: name, p: me.presence }); };
+      const R = {
+        name,
+        _on(m) {
+          if (!alive) return;
+          if (m.t === 'peers' && Array.isArray(m.list)) { m.list.forEach(x => x && typeof x.id === 'string' && setP(x.id, x.p)); later(); }
+          else if (m.t === 'join' && typeof m.id === 'string') { getP(m.id); later(); }
+          else if (m.t === 'pres' && typeof m.id === 'string') { setP(m.id, m.p); later(); }
+          else if (m.t === 'left') { const p = peers.get(m.id); if (p) { peers.delete(m.id); pend.left.push(p); later(); } }
+          else if (m.t === 'full') { mpStatus('Servern är full.'); }
+        },
+        _closed() { if (!alive) return; alive = false; errs.forEach(f => { try { f({ code: 'upstream_error' }); } catch (e) { } }); },
+        presence(patch) {
+          const np = Object.assign({}, me.presence); for (const k in patch) { if (patch[k] === null) delete np[k]; else np[k] = patch[k]; }
+          me.presence = np; const d = performance.now() - lastSent; if (d >= 50) send(); else if (!timer) timer = setTimeout(send, 50 - d);
+          return Promise.resolve();
+        },
+        peers: snap,
+        onPeers(h, onErr) { hs.push(h); if (onErr) errs.push(onErr); setTimeout(() => alive && h({ peers: snap(), joined: snap(), left: [], updated: [] }), 0); return () => { hs = hs.filter(x => x !== h); }; },
+        leave() { if (alive) tx({ t: 'leave', r: name }); alive = false; hs = []; errs = []; clearTimeout(timer); rooms.delete(name); return Promise.resolve(); },
+      };
+      rooms.set(name, R); tx({ t: 'join', r: name });
+      return R;
+    }
+    ws.onmessage = ev => {
+      let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+      if (m.t === 'hello') { const lob = mk('lobby'); lob.server = true; lob.join = rn => Promise.resolve(rooms.get(rn) || mk(rn)); finish(lob); return; }
+      const R = rooms.get(m.r); if (R) R._on(m);
+    };
+    ws.onclose = () => { for (const R of [...rooms.values()]) R._closed(); finish(null); };
+    ws.onerror = () => { };
+  });
+}
+const onOwnServer = !inClaude && /^https?:$/.test(location.protocol) && !/(^|\.)github\.io$/.test(location.hostname);
 function ensureLobby() {
   if (lobbyP) return lobbyP;
   lobbyState = 'loading'; renderServerList();
-  lobbyP = (inClaude ? Promise.resolve(window.claude.use('room')).catch(() => null) : p2pLobby().catch(() => null)).then(r => {
+  lobbyP = (inClaude ? Promise.resolve(window.claude.use('room')).catch(() => null) : onOwnServer ? wsLobby().then(l => l || p2pLobby()).catch(() => null) : p2pLobby().catch(() => null)).then(r => {
     NET.lobby = r; lobbyState = r ? 'ready' : 'fail';
     if (r) r.onPeers(() => { if (!mpEl.hidden) renderServerList(); }, () => { NET.lobby = null; lobbyState = 'fail'; renderServerList(); });
     renderServerList(); return r;
@@ -1709,7 +1760,7 @@ function renderServerList() {
   if (!NET.lobby) {
     if (lobbyState === 'loading' || lobbyState === 'idle') note('Ansluter till nätverket…');
     else if (inClaude) note('Inne i Claude kräver multiplayer inloggning. Öppna den fristående versionen av spelet för att spela utan konto.');
-    else note('Kunde inte nå nätverket. Kontrollera internetanslutningen och försök igen.');
+    else note(onOwnServer ? 'Kunde inte nå spelservern. Kontrollera att datorn med servern är igång och försök igen.' : 'Kunde inte nå nätverket. Kontrollera internetanslutningen och försök igen.');
     return;
   }
   const list = lobbyServers();

@@ -1650,8 +1650,10 @@ async function loadTrystero() {
   }
   return null;
 }
+// Hand-picked public Nostr relays (the library's random default picks are often offline).
+const NOSTR_RELAYS = ['wss://nos.lol', 'wss://relay.primal.net', 'wss://nostr.mom', 'wss://relay.snort.social', 'wss://offchain.pub', 'wss://nostr-pub.wellorder.net', 'wss://nostr.oxtr.dev', 'wss://relay.damus.io'];
 function p2pRoom(T, extra, name) {
-  const room = T.joinRoom(Object.assign({ appId: 'fjallpark-skidspel-v1' }, extra), name);
+  const room = T.joinRoom(Object.assign({ appId: 'fjallpark-skidspel-v1', relayConfig: { urls: NOSTR_RELAYS, warnOnRelayFailure: false } }, extra), name);
   const act = room.makeAction('pres');
   const peers = new Map(), me = { peer: T.selfId, isMe: true, presence: {} };
   let hs = [], pend = { joined: [], left: [], updated: [] }, sch = false, lastSent = 0, timer = null, alive = true;

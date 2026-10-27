@@ -189,9 +189,9 @@ button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
   <div id="combo"></div>
   <div id="trick"></div>
   <div id="toast"></div>
-  <div id="hint">Vänster spak styr · Höger spak: dra ner och flicka upp för att hoppa</div>
-  <div class="stick" id="stickL"><span class="tag">STYR · SNURRA</span><div class="knob" id="knobL"></div></div>
-  <div class="stick" id="stickR"><span class="tag">HOPP · VOLT</span><div class="knob" id="knobR"></div></div>
+  <div id="hint">Vänster spak styr och voltar · Höger spak: dra ner och flicka upp för att hoppa, åt sidan för att slida</div>
+  <div class="stick" id="stickL"><span class="tag">STYR · VOLT</span><div class="knob" id="knobL"></div></div>
+  <div class="stick" id="stickR"><span class="tag">HOPP · SLIDE · GRAB</span><div class="knob" id="knobR"></div></div>
   <button id="btnGrab" class="act">GRAB</button>
   <button id="btnPush" class="act">PUSH<small>staka</small></button>
   <button id="btnLift" hidden>Åk lift</button>
@@ -221,14 +221,14 @@ button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
     <div class="tk-r">
       <h2>Så åker du</h2>
       <ul>
-        <li><b>Vänster spak:</b> styr åt sidorna, snurrar i luften. Ner = broms, upp = fartställning.</li>
-        <li><b>Höger spak:</b> dra ner för att ladda, flicka upp för att hoppa. I luften: upp = frontflip, ner = backflip.</li>
-        <li><b>GRAB:</b> tryck i luften. Spakarnas läge väljer grabben: vänster ← Japan, → Mute · höger ↑ Nose, ↓ Tail, → Truck driver, ← Critical. Spakarna voltar och snurrar medan du håller grabben.</li>
+        <li><b>Vänster spak:</b> styr åt sidorna och snurrar i luften. I luften: upp = frontflip, ner = backflip. På marken: ner = broms, upp = fartställning.</li>
+        <li><b>Höger spak:</b> dra ner och flicka upp för att hoppa. Åt sidan = slida skidorna (sladd/broms). I luften: åt sidan = shifty.</li>
+        <li><b>GRAB:</b> tryck i luften och välj grab med höger spak: → Mute, ← Japan, ↑ Nose, ↓ Tail, ↗ Truck driver, ↖ Critical, mitten = Safety. Vänster spak voltar och snurrar under tiden.</li>
         <li><b>PUSH</b> och <b>GRAB</b> sitter ovanför höger spak. PUSH stakar med stavarna för mer fart.</li>
-        <li>Landa med skidorna rakt fram. Rails: styr åt sidan för railslide.</li>
+        <li>Landa med skidorna rakt fram. Rails: höger spak åt sidan för railslide.</li>
         <li>Åk till en dalstation och tryck <b>Åk lift</b>. Se upp för pistmaskinerna.</li>
       </ul>
-      <p>Tangentbord: <span class="k">WASD</span> styr · <span class="k">↑↓</span> volt · <span class="k">Mellanslag</span> hopp · <span class="k">G</span> grab · <span class="k">Q</span> push · <span class="k">E</span> lift · <span class="k">V</span> väder</p>
+      <p>Tangentbord: <span class="k">WASD</span> styr · <span class="k">W S</span> volt · <span class="k">←→</span> slide/shifty · <span class="k">↓↑</span> eller <span class="k">Mellanslag</span> hopp · <span class="k">G</span> grab · <span class="k">Q</span> push · <span class="k">E</span> lift · <span class="k">V</span> väder</p>
     </div>
   </div>
 </div>
@@ -1075,10 +1075,6 @@ function chairTerminal(L, top) {
     for (const zz of [1.2, 3]) { addBox(steelMat, 0.08, 1.1, 0.08, x0 + L.g - 1.2, gy + 0.55, zc - o * L.sLoad + o * zz); addBox(steelMat, 0.08, 1.1, 0.08, x0 + L.g + 1.2, gy + 0.55, zc - o * L.sLoad + o * zz); }
     addGate(L, x0 + L.g, gy + 0.2, -L.gateU);
     addBelt(x0 + L.g, gy, (-L.gateU - (L.sLoad + 0.6)) / 2, 1.3, L.sLoad + 0.6 - L.gateU, 0);
-    for (const sx of [-1.4, 1.4]) {
-      for (let zz = 2; zz <= 16; zz += 2) addBox(steelMat, 0.07, 1.0, 0.07, x0 + L.g + sx, gy + 0.5, zc + o * zz, 0, 0, 0, false);
-      addBox(ropeMat, 0.04, 0.04, 14, x0 + L.g + sx, gy + 0.9, zc + o * 9, 0, 0, 0, false);
-    }
   }
   if (top) { addBelt(x0 + (L.g - 0.6 + L.offV + 0.4) / 2, gy, L.offU, 1.4, L.offV + 0.4 - (L.g - 0.6), -Math.PI / 2); }
   operatorHut(x0 - 8.5, gy, zc + o * 1.5, o);
@@ -1100,7 +1096,6 @@ function surfaceTerminal(L, top) {
     lobs(x0 + 4.8, zc + o * 2.5, 2.4);
     addGate(L, x0 + L.g, gy, -L.gateU);
     addBox(matBlue, 2.0, 0.04, 2.4, x0 + L.g, gy + 0.03, zc - o * (L.sLoad + 0.5), 0, 0, 0, false);
-    for (const sx of [-1.2, 1.2]) for (let zz = 1; zz <= 9; zz += 2) addBox(steelMat, 0.07, 0.9, 0.07, x0 + L.g + sx, gy + 0.45, zc + o * zz, 0, 0, 0, false);
   }
   addBox(steelMat, 2 * L.g + 1, 0.3, 0.4, x0, gy + h + 0.4, zc + o * 0.2);
   const wheel = new THREE.Mesh(new THREE.TorusGeometry(L.g, 0.09, 6, 28), darkMat); wheel.rotation.x = Math.PI / 2; wheel.position.set(x0, gy + h, zc); BP.add(wheel);
@@ -1640,7 +1635,7 @@ function mergeStatics() {
 
 /* ================= STATE ================= */
 const S = {
-  p: new V3(), v: new V3(), heading: 0, grounded: true, offT: 0, airTime: 0, spin: 0, flip: 0, grabT: 0, grabName: null, grabOn: false, grabPrime: 0, airJumped: false,
+  p: new V3(), v: new V3(), heading: 0, grounded: true, offT: 0, airTime: 0, spin: 0, flip: 0, grabT: 0, grabName: null, grabOn: false, grabPrime: 0, airJumped: false, slideG: 0, shifty: 0, shiftyMax: 0, lfArmed: true,
   grind: null, grindS: 0, grindDir: 1, grindSpeed: 0, grindDist: 0, slide: 0, slideT: 0, slid: false, railCd: 0, lastRail: null,
   charging: false, charge: 0, centerT: 0, jumpQ: false, jumpPow: 0, rsArmed: true, prevRy: 0, crashT: 0, upS: new V3(0, 1, 0), lift: null, liftCar: 0, liftWait: false, liftRem: 0, ff: false,
   latSpeed: 0, braking: 0, pushCd: 0, pushAnim: 1, pushImp: 0, pushK: 0, score: 0, best: +store.get('fjallpark.best', 0) || 0, combo: { names: [], pts: 0, idle: 0 },
@@ -1659,20 +1654,21 @@ function toast(text, kind = '') { const t = H.toast; t.className = ''; void t.of
 /* ================= TRICKS ================= */
 function startAir() {
   S.airTime = 0; S.spin = 0; S.flip = 0; S.grabT = 0; S.offT = 0; S.airJumped = false;
+  S.lfArmed = Math.abs(input.ly) < 0.3; S.shifty = S.slideG; S.shiftyMax = 0;
   if (S.grabPrime > 0) { S.grabOn = true; S.grabName = pickGrab(); } else { S.grabOn = false; S.grabName = null; }
 }
-function pickGrab() {
-  const { lx, ly, rx, ry } = input;
-  if (rx > 0.45) return 'Truck driver'; if (rx < -0.45) return 'Critical';
-  if (ry < -0.45) return 'Nose grab'; if (ry > 0.45) return 'Tail grab';
-  if (lx < -0.45) return 'Japan'; if (lx > 0.45) return 'Mute';
-  if (ly > 0.45) return 'Tail grab'; if (ly < -0.45) return 'Nose grab';
+function pickGrab() {   // right stick: → Mute, ← Japan, ↑ Nose, ↓ Tail, ↗ Truck driver, ↖ Critical, centre Safety
+  const { rx, ry } = input, ax = Math.abs(rx) > 0.4, ay = Math.abs(ry) > 0.4;
+  if (ax && ay && ry < 0) return rx > 0 ? 'Truck driver' : 'Critical';
+  if (ax && Math.abs(rx) >= Math.abs(ry)) return rx > 0 ? 'Mute' : 'Japan';
+  if (ay) return ry < 0 ? 'Nose grab' : 'Tail grab';
   return 'Safety';
 }
 function trickParts() {
   const n180 = Math.round(Math.abs(S.spin) / Math.PI), nf = Math.round(Math.abs(S.flip) / (2 * Math.PI)), parts = [];
   if (nf > 0) parts.push((nf === 2 ? 'Dubbel ' : nf >= 3 ? 'Trippel ' : '') + (S.flip > 0 ? 'Frontflip' : 'Backflip'));
   if (n180 > 0) parts.push(String(n180 * 180));
+  if (S.shiftyMax > 0.75) parts.push('Shifty');
   if (S.grabName && S.grabT > 0.15) parts.push(S.grabName);
   return { parts, n180, nf };
 }
@@ -1682,10 +1678,10 @@ function evalAir() {
   const hsp = Math.hypot(S.v.x, S.v.z);
   // Slow = forgiving: at walking pace you can land at any angle, at speed skis must point down the line.
   const slow = hsp <= 5 / 3.6, spinTol = slow ? 1.58 : 1.0, flipTol = slow ? 1.35 : 1.05;
-  const ok = Math.abs(fr) < flipTol && Math.abs(sr) < spinTol, sketchy = (Math.abs(fr) > 0.55 || Math.abs(sr) > 0.6) && !slow;
+  const ok = Math.abs(fr) < flipTol && Math.abs(sr) < spinTol, sketchy = (Math.abs(fr) > 0.55 || Math.abs(sr) > 0.6 || Math.abs(S.shifty) > 0.65) && !slow;
   const { parts, n180, nf } = trickParts();
   if (!parts.length) { if (S.airTime > 1.1) parts.push('Big air'); else return { ok, sketchy, name: null }; }
-  const pts = Math.round(S.airTime * 45 + n180 * 110 * (1 + 0.15 * n180) + nf * nf * 450 + (S.grabT > 0.15 ? 120 + S.grabT * 160 : 0) + (S.grabT > 0.15 && (n180 || nf) ? 100 : 0));
+  const pts = Math.round(S.airTime * 45 + n180 * 110 * (1 + 0.15 * n180) + nf * nf * 450 + (S.grabT > 0.15 ? 120 + S.grabT * 160 : 0) + (S.grabT > 0.15 && (n180 || nf) ? 100 : 0) + (S.shiftyMax > 0.75 ? 90 : 0));
   return { ok, sketchy, name: parts.join(' '), pts };
 }
 function addTrick(name, pts) { const c = S.combo; c.names.push(name); c.pts += pts; c.idle = 0; }
@@ -1739,7 +1735,8 @@ function stepSki(dt) {
     S.v.y -= G * dt; S.v.addScaledVector(n, -S.v.dot(n));
     fp.set(Math.sin(S.heading), 0, Math.cos(S.heading)); fp.addScaledVector(n, -fp.dot(n)).normalize();
     let along = S.v.dot(fp); lat.copy(S.v).addScaledVector(fp, -along);
-    const brake = input.ly > 0.3 ? input.ly : 0;
+    S.slideG += (input.rx * 1.25 - S.slideG) * (1 - Math.exp(-8 * dt));
+    const pizza = input.ly > 0.3 ? input.ly : 0, brake = Math.max(pizza, Math.min(1.1, Math.abs(Math.sin(S.slideG)) * 1.25)); S.pizza = pizza;
     const k = Math.exp(-(brake ? 2.5 : 7.5) * dt), lm = lat.length();
     lat.multiplyScalar(k); along += (along >= 0 ? 1 : -1) * lm * (1 - k) * (brake ? 0 : 0.5);
     S.v.copy(fp).multiplyScalar(along).add(lat);
@@ -1760,7 +1757,10 @@ function stepSki(dt) {
     S.p.addScaledVector(S.v, dt);
     const ramp = smooth(0.04, 0.2, S.airTime);
     S.spin -= input.lx * 8.6 * ramp * dt;
-    if (S.rsArmed) S.flip += -input.ry * 6.6 * ramp * dt;
+    if (!S.lfArmed && Math.abs(input.ly) < 0.3) S.lfArmed = true;
+    if (S.lfArmed) S.flip += -input.ly * 6.6 * ramp * dt;
+    S.shifty += ((S.grabOn ? 0 : input.rx * 1.3) - S.shifty) * (1 - Math.exp(-9 * dt)); if (Math.abs(S.shifty) > S.shiftyMax) S.shiftyMax = Math.abs(S.shifty);
+    if (S.grabOn && Math.hypot(input.rx, input.ry) > 0.45) S.grabName = pickGrab();
     if (S.grabOn) S.grabT += dt;
     const gh = groundH(S.p.x, S.p.z);
     if (S.p.y <= gh) { S.p.y = gh; land(); }
@@ -1785,7 +1785,7 @@ function land() {
   } else S.heading = bodyYaw;
   if (S.airTime > 0.5) emit(S.p.x, S.p.y, S.p.z, 14, 4, S.v.x * 0.3, S.v.z * 0.3);
   if (r.name) { S.v.multiplyScalar(r.sketchy ? 0.8 : 0.98); addTrick(r.name, Math.round(r.pts * (r.sketchy ? 0.6 : 1))); toast(r.sketchy ? 'Skakigt!' : pick(['Snyggt!', 'Rent!', 'Stompad!', 'Fett!', 'Klockrent!'])); }
-  S.spin = 0; S.flip = 0; S.grabName = null; S.grabT = 0; S.airTime = 0;
+  S.spin = 0; S.flip = 0; S.grabName = null; S.grabT = 0; S.airTime = 0; S.slideG = S.shifty * 0.5; S.shifty = 0; S.shiftyMax = 0;
 }
 function checkRails() {
   if (S.grind) return;
@@ -1810,7 +1810,7 @@ function stepGrind(dt) {
   const r = S.grind;
   if (S.jumpQ) { S.jumpQ = false; endGrind(4.5 + 2.5 * S.jumpPow); return; }
   S.grindSpeed += (-G * r.dir.y * S.grindDir - 0.8) * dt;
-  if (Math.abs(input.lx) > 0.4) S.slideT = Math.sign(input.lx) * Math.PI / 2;
+  if (Math.abs(input.rx) > 0.4) S.slideT = Math.sign(input.rx) * Math.PI / 2;
   S.slide += (S.slideT - S.slide) * Math.min(1, 10 * dt); if (Math.abs(S.slide) > 1.1) S.slid = true;
   S.grindS += S.grindSpeed * S.grindDir * dt; S.grindDist += S.grindSpeed * dt;
   const out = S.grindS < 0 || S.grindS > r.len || S.grindSpeed < 1.2;
@@ -1873,12 +1873,15 @@ function liftFloorY(L, x, z) {   // stand on the station slab and the belts, not
   if (Math.abs(ut + L.offU) < 0.75 && v > 0 && v < L.offV + 0.5) return Math.max(g, L.gyT + 0.31);
   return g;
 }
+function pickCarrier(L) {   // the next carrier we can still reach in time from the gate
+  let best = 0, bestRem = 1e9;
+  for (let i = 0; i < L.N; i++) { const rem = fmod(L.tLoad - carrierTau(L, i), L.period); if (rem >= L.tGo + 0.4 && rem < bestRem) { bestRem = rem; best = i; } }
+  S.liftCar = best; S.liftRem = bestRem;
+}
 function boardLift(L) {
-  bankCombo(); mode = 'lift'; S.lift = L; S.grind = null; S.charging = false; S.v.set(0, 0, 0); S.liftWait = true; S.liftRem = 0;
-  const [cu, cv] = liftUV(L, S.p.x, S.p.z), back = L.type === 'chair' ? -18 : -11, pts = [[S.p.x, S.p.z]];
-  if (cu > back + 3) pts.push(liftW(L, back, clamp(cv, -9, 10)));
-  pts.push(liftW(L, back, L.g), liftW(L, L.gateU - 0.6, L.g));
-  S.lpath = mkPath(pts); S.ld = 0; S.lp = 'walk';
+  bankCombo(); mode = 'lift'; S.lift = L; S.grind = null; S.charging = false; S.v.set(0, 0, 0); S.liftWait = true;
+  const [x, z] = liftW(L, L.gateU - 0.6, L.g); S.p.set(x, liftFloorY(L, x, z), z); S.heading = L.yaw; PTR.on = false; PTRD.on = false;
+  S.lp = 'gate'; pickCarrier(L);
 }
 function startOff(L) {
   bankCombo(); const A = [S.p.x, S.p.z];
@@ -1896,9 +1899,7 @@ function stepLift(dt) {
     S.heading += wrapPi((onBelt ? L.yaw : Math.atan2(LP.hx, LP.hz)) - S.heading) * (1 - Math.exp(-6 * dt));
     if (S.ld >= S.lpath.len) {
       if (S.lp === 'walk') {
-        S.lp = 'gate'; let best = 0, bestRem = 1e9;   // the next carrier we can still reach in time
-        for (let i = 0; i < L.N; i++) { const rem = fmod(L.tLoad - carrierTau(L, i), L.period); if (rem >= L.tGo + 0.4 && rem < bestRem) { bestRem = rem; best = i; } }
-        S.liftCar = best; S.liftRem = bestRem;
+        S.lp = 'gate'; pickCarrier(L);
       } else placeAt(L.unloadP[0], L.unloadP[1], L.exitW[0], L.exitW[1], chair ? 4 : 3);
     }
     return;
@@ -1925,7 +1926,7 @@ function stepLift(dt) {
 function placeAt(x, z, dx, dz, speed) {
   mode = 'ski'; S.grind = null; S.grounded = true; S.lift = null; S.liftWait = false; S.lp = null; PTRD.on = false;
   S.p.set(x, groundH(x, z), z); const l = Math.hypot(dx, dz) || 1; S.heading = Math.atan2(dx / l, dz / l);
-  PTR.on = false; S.v.set(dx / l * speed, 0, dz / l * speed); S.spin = 0; S.flip = 0; S.airTime = 0; S.charging = false; S.grabOn = false; S.upS.set(0, 1, 0);
+  PTR.on = false; S.v.set(dx / l * speed, 0, dz / l * speed); S.slideG = 0; S.shifty = 0; S.spin = 0; S.flip = 0; S.airTime = 0; S.charging = false; S.grabOn = false; S.upS.set(0, 1, 0);
   basisQ(S.upS, S.heading, SK.root.quaternion);
 }
 function teleport(where) {
@@ -1959,12 +1960,12 @@ function updateSkier(dt) {
     qA.setFromAxisAngle(YAX, S.heading + S.spin); qB.setFromAxisAngle(XAX, S.flip); qT.copy(qA).multiply(qB);
     if (S.airTime < 0.1) R.quaternion.slerp(qT, 1 - Math.exp(-25 * dt)); else R.quaternion.copy(qT);
     S.upS.set(0, 1, 0);
-    crouch = S.grabOn ? 1 : 0.5; skiLift = S.grabOn ? 0.32 : 0.05; pitch = S.grabOn ? -0.62 : -0.24;
+    crouch = S.grabOn ? 1 : 0.5; skiLift = S.grabOn ? 0.32 : 0.05; pitch = S.grabOn ? -0.62 : -0.24; slideVis = S.shifty;
   } else {
     groundN(S.p.x, S.p.z, nTmp, 0.9); S.upS.lerp(nTmp, 1 - Math.exp(-10 * dt)).normalize();
     basisQ(S.upS, S.heading, qT); R.quaternion.slerp(qT, 1 - Math.exp(-14 * dt));
     if (mode === 'crash') { crashX = -1.3; pitch = 0.2; }
-    else { lean = input.lx * 0.2 * clamp(hs / 12, 0, 1); if (input.ly < -0.3) { crouch = 0.8; pitch = -0.14; } else if (input.ly > 0.3) crouch = 0.5; }
+    else { slideVis = S.slideG; lean = input.lx * 0.2 * clamp(hs / 12, 0, 1); if (input.ly < -0.3) { crouch = 0.8; pitch = -0.14; } else if (input.ly > 0.3) crouch = 0.5; }
   }
   if (S.charging && mode === 'ski') crouch = 0.35 + 0.65 * clamp(S.charge / 0.3, 0, 1);
   SK.crouch = lerp(SK.crouch, crouch, k); SK.lift = lerp(SK.lift, skiLift, k);
@@ -1975,7 +1976,7 @@ function updateSkier(dt) {
   // first-person skis
   SK.vmSkis.position.set(0, lerp(SK.lift * 1.9, 0.6, st), lerp(0, 0.35, st));
   SK.vmSkis.rotation.y = lerp(SK.vmSkis.rotation.y, slideVis, k);
-  SK.skiPair.forEach((s, i) => { s.rotation.z = lean * 1.2; s.position.z = (S.braking && mode === 'ski' && S.grounded ? -0.05 : 0); s.rotation.y = (S.braking && S.grounded ? (i ? 0.18 : -0.18) * S.braking : 0); });
+  SK.skiPair.forEach((s, i) => { s.rotation.z = lean * 1.2; s.position.z = (S.braking && mode === 'ski' && S.grounded ? -0.05 : 0); s.rotation.y = (S.pizza && S.grounded ? (i ? 0.18 : -0.18) * S.pizza : 0); });
   SK.pose.rotation.z = lerp(SK.pose.rotation.z, lean, k);
   SK.pose.rotation.x = lerp(SK.pose.rotation.x, crashX, 1 - Math.exp(-(crashX ? 9 : 6) * dt));
   SK.pose.position.y = lerp(SK.pose.position.y, crashX ? 0.15 : 0, k);
@@ -2815,7 +2816,7 @@ function sendState() {
   const now = performance.now(); if (now - NET.lastSend < 50) return; NET.lastSend = now;
   const q = SK.root.quaternion, r2 = v => Math.round(v * 100) / 100, r3 = v => Math.round(v * 1000) / 1000;
   const m = mode === 'lift' ? (S.lp !== 'ride' ? 0 : S.lift.type === 'chair' ? 4 : 5) : mode === 'crash' ? 3 : S.grind ? 2 : S.grounded ? 0 : 1;
-  NET.g.presence({ pl: { a: [r2(S.p.x), r2(S.p.y - (SK.sink || 0)), r2(S.p.z), r3(q.x), r3(q.y), r3(q.z), r3(q.w), r2(SK.crouch), r2(SK.lift), r2(S.grind ? S.slide : 0), r2(SK.pose.rotation.z)], m, g: S.grabOn ? 1 : 0, pk: S.pushK, s: Math.round(S.score), l: LOOK, cb: NET.cb } }).catch(() => { });
+  NET.g.presence({ pl: { a: [r2(S.p.x), r2(S.p.y - (SK.sink || 0)), r2(S.p.z), r3(q.x), r3(q.y), r3(q.z), r3(q.w), r2(SK.crouch), r2(SK.lift), r2(S.grind ? S.slide : S.grounded ? S.slideG : S.shifty), r2(SK.pose.rotation.z)], m, g: S.grabOn ? 1 : 0, pk: S.pushK, s: Math.round(S.score), l: LOOK, cb: NET.cb } }).catch(() => { });
 }
 function feedItem(name, text, pts) {
   const f = $('feed'), d = document.createElement('div');
